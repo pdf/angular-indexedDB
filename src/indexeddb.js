@@ -31,13 +31,13 @@ angular.module('xc.indexedDB', []).provider('$indexedDB', function() {
         console.log('Transaction completed.');
     };
     module.onTransactionAbort = function(e) {
-        console.log('Transaction aborted: '+ e.target.webkitErrorMessage || e.target.errorCode);
+        console.log('Transaction aborted: '+ e.target.webkitErrorMessage || e.target.errorCode || e.target.error.message || e.target.error.code);
     };
     module.onTransactionError = function(e) {
-        console.log('Transaction failed: ' + e.target.errorCode);
+        console.log('Transaction failed: ' + e.target.webkitErrorMessage || e.target.errorCode || e.target.error.message || e.target.error.code);
     };
     module.onDatabaseError = function(e) {
-        alert("Database error: " + e.target.webkitErrorMessage || e.target.errorCode);
+        alert("Database error: " + e.target.webkitErrorMessage || e.target.errorCode || e.target.error.message || e.target.error.code);
     };   
     module.onDatabaseBlocked = function(e) {
         // If some other tab is loaded with the database, then it needs to be closed
@@ -111,7 +111,9 @@ angular.module('xc.indexedDB', []).provider('$indexedDB', function() {
                 dbReq = indexedDB.open(module.dbName, module.dbVersion || 1);
                 dbReq.onsuccess = function(e) {
                     module.db = dbReq.result;
-                    defered.resolve(module.db);
+                    $timeout(function(){
+                        defered.resolve(module.db);
+                    });
                 };
                 dbReq.onblocked = module.onDatabaseBlocked;
                 dbReq.onerror = module.onDatabaseError;
@@ -122,7 +124,9 @@ angular.module('xc.indexedDB', []).provider('$indexedDB', function() {
                     module.upgradeCallback && module.upgradeCallback(e, db, tx);
                 };
             } else {
-                defered.resolve(module.db);
+                $timeout(function(){
+                    defered.resolve(module.db);
+                });
             }
             return defered.promise;
         };
@@ -194,18 +198,24 @@ angular.module('xc.indexedDB', []).provider('$indexedDB', function() {
                     if (angular.isArray(data)) {
                         data.forEach(function(item){
                             req = store.add(item);
-                            req.onsuccess = req.onerror = function(e) { 
+                            req.onsuccess = function(e) { 
                                 $timeout(function(){
                                     d.resolve(e.target.result); 
                                 });
                             };
+                            req.onerror = function(e) {
+                              $q.reject(e.target.webkitErrorMessage || e.target.errorCode || e.target.error.message || e.target.error.code)
+                            };
                         });
                     } else {
                         req = store.add(data);
-                        req.onsuccess = req.onerror = function(e) { 
+                        req.onsuccess = function(e) { 
                             $timeout(function(){
                                 d.resolve(e.target.result); 
                             });
+                        };
+                        req.onerror = function(e) {
+                          $q.reject(e.target.webkitErrorMessage || e.target.errorCode || e.target.error.message || e.target.error.code)
                         };
                     }
                     return d.promise;
@@ -231,18 +241,24 @@ angular.module('xc.indexedDB', []).provider('$indexedDB', function() {
                     if (angular.isArray(data)) {
                         data.forEach(function(item){
                             req = store.put(item);
-                            req.onsuccess = req.onerror = function(e) { 
+                            req.onsuccess = function(e) { 
                                 $timeout(function(){
                                     d.resolve(e.target.result); 
                                 });
                             };
+                            req.onerror = function(e) {
+                              $q.reject(e.target.webkitErrorMessage || e.target.errorCode || e.target.error.message || e.target.error.code)
+                            };
                         });
                     } else {
                         req = store.put(data);
-                        req.onsuccess = req.onerror = function(e) { 
+                        req.onsuccess = function(e) { 
                             $timeout(function(){
                                 d.resolve(e.target.result); 
                             });
+                        };
+                        req.onerror = function(e) {
+                          $q.reject(e.target.webkitErrorMessage || e.target.errorCode || e.target.error.message || e.target.error.code)
                         };
                     }
                     return d.promise;
@@ -263,10 +279,13 @@ angular.module('xc.indexedDB', []).provider('$indexedDB', function() {
                 var d = $q.defer();
                 return this.internalObjectStore(this.storeName, READWRITE).then(function(store){
                     var req = store.delete(key);
-                    req.onsuccess = req.onerror = function(e) { 
+                    req.onsuccess = function(e) { 
                         $timeout(function(){
                             d.resolve(e.target.result); 
                         });
+                    };
+                    req.onerror = function(e) {
+                      $q.reject(e.target.webkitErrorMessage || e.target.errorCode || e.target.error.message || e.target.error.code)
                     };
                     return d.promise;
                 });
@@ -285,10 +304,13 @@ angular.module('xc.indexedDB', []).provider('$indexedDB', function() {
                 var d = $q.defer();
                 return this.internalObjectStore(this.storeName, READWRITE).then(function(store){
                     var req = store.clear();
-                    req.onsuccess = req.onerror = function(e) { 
+                    req.onsuccess = function(e) { 
                         $timeout(function(){
                             d.resolve(e.target.result); 
                         });
+                    };
+                    req.onerror = function(e) {
+                      $q.reject(e.target.webkitErrorMessage || e.target.errorCode || e.target.error.message || e.target.error.code)
                     };
                     return d.promise;
                 });                
@@ -331,10 +353,13 @@ angular.module('xc.indexedDB', []).provider('$indexedDB', function() {
                     } else {
                         req = store.get(keyOrIndex);
                     }
-                    req.onsuccess = req.onerror = function(e) { 
+                    req.onsuccess = function(e) { 
                         $timeout(function(){
                             d.resolve(e.target.result); 
                         });
+                    };
+                    req.onerror = function(e) {
+                      $q.reject(e.target.webkitErrorMessage || e.target.errorCode || e.target.error.message || e.target.error.code)
                     };
                     return promise;
                 });
@@ -356,10 +381,13 @@ angular.module('xc.indexedDB', []).provider('$indexedDB', function() {
                     var req;
                     if (store.getAll) {         
                         req = store.getAll();
-                        req.onsuccess = req.onerror = function(e) { 
+                        req.onsuccess = function(e) { 
                             $timeout(function(){
                                 d.resolve(e.target.result); 
                             });
+                        };
+                        req.onerror = function(e) {
+                          $q.reject(e.target.webkitErrorMessage || e.target.errorCode || e.target.error.message || e.target.error.code)
                         };
                     } else {
                         req = store.openCursor();
@@ -369,11 +397,13 @@ angular.module('xc.indexedDB', []).provider('$indexedDB', function() {
                                 results.push(cursor.value);
                                 cursor.continue();
                             } else {
-                                d.resolve(results);
+                                $timeout(function(){
+                                    d.resolve(results);
+                                });
                             }
                         };
                         req.onerror = function(e) {
-                            d.reject(e.target.result);
+                            $q.reject(e.target.webkitErrorMessage || e.target.errorCode || e.target.error.message || e.target.error.code)
                         };
                     }
                     return d.promise;
@@ -403,10 +433,13 @@ angular.module('xc.indexedDB', []).provider('$indexedDB', function() {
                     } else {
                         req = store.openCursor(options.keyRange, options.direction);
                     }
-                    req.onsuccess = req.onerror = function(e) { 
+                    req.onsuccess = function(e) { 
                         $timeout(function(){
                             d.resolve(e.target.result); 
                         });
+                    };
+                    req.onerror = function(e) {
+                      $q.reject(e.target.webkitErrorMessage || e.target.errorCode || e.target.error.message || e.target.error.code)
                     };
                     return d.promise;
                 });
